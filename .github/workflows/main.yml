@@ -1,0 +1,36 @@
+
+name: Scriddo Virtual PC - Resource Check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: windows-2025
+
+    steps:
+      - name: Show Windows version
+        shell: pwsh
+        run: Get-ComputerInfo |
+          Select-Object WindowsProductName, WindowsVersion,
+          OsArchitecture | Format-List
+
+      - name: Check available RAM
+        shell: pwsh
+        run: |
+          $os = Get-CimInstance Win32_OperatingSystem
+          "Total RAM: {0:N2} GB" -f (
+            $os.TotalVisibleMemorySize / 1MB
+          )
+
+      - name: Check disk capacity
+        shell: pwsh
+        run: |
+          Get-CimInstance Win32_LogicalDisk |
+            Select-Object DeviceID,
+              @{N="SizeGB";E={[math]::Round($_.Size / 1GB, 2)}},
+              @{N="FreeGB";E={[math]::Round($_.FreeSpace / 1GB, 2)}} |
+            Format-Table -AutoSize
